@@ -1,0 +1,24 @@
+# Nixpacks configuration for EFMS Payroll (Next.js 15 + Prisma + MinIO)
+# Deploy on Railway, Render, or any Nixpacks-compatible platform
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "nodePackages.pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+  # Generate Prisma client (output: generated/prisma)
+  "pnpm prisma generate",
+  # Build Next.js (env validation skipped — real vars injected at runtime)
+  "SKIP_ENV_VALIDATION=1 pnpm build",
+]
+
+[start]
+cmd = "pnpm prisma migrate deploy && pnpm start"
+
+[variables]
+NODE_ENV = "production"
+# Prisma generates to a custom path — tell it where to find the engine
+PRISMA_QUERY_ENGINE_LIBRARY = "./generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node"
