@@ -20,5 +20,3 @@ cmd = "pnpm prisma migrate deploy && pnpm start"
 
 [variables]
 NODE_ENV = "production"
-# Prisma generates to a custom path — tell it where to find the engine
-PRISMA_QUERY_ENGINE_LIBRARY = "./generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node"
