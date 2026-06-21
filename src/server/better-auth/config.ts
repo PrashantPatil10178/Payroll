@@ -4,8 +4,17 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { env } from "@/env";
 import { db } from "@/server/db";
 
+const baseURL = env.BETTER_AUTH_URL ?? "http://localhost:3000";
+
 export const auth = betterAuth({
-	baseURL: env.BETTER_AUTH_URL ?? "http://localhost:3000",
+	baseURL,
+	trustedOrigins: [
+		baseURL,
+		"http://localhost:3000",
+		...(env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
+			.map((o) => o.trim())
+			.filter(Boolean) ?? []),
+	],
 	database: prismaAdapter(db, {
 		provider: "postgresql", // or "sqlite" or "mysql"
 	}),
