@@ -95,7 +95,7 @@ export function GeneralSettings({ org }: { org: OrgSettings }) {
 				<CardContent>
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
 						<StatBox label="Members" value={org.userCount} />
-						<StatBox label="Teachers" value={org.teacherCount} />
+						<StatBox label="Members" value={org.teacherCount} />
 						<StatBox label="Status" value={org.status.toLowerCase()} />
 					</div>
 				</CardContent>

@@ -70,7 +70,7 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 	const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
 
 	const [exporting, setExporting] = useState(false);
-	const exportPdf = api.efms.exportReportPdf.useMutation();
+	const exportTeacherPdf = api.efms.exportTeacherReportPdf.useMutation();
 
 	const handleExcel = () => {
 		if (!data) return;
@@ -79,7 +79,7 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 			Title: s.title,
 			Type: typeLabel(s.sessionType),
 			"Duration (min)": s.durationMinutes,
-			"Amount (₹)": s.amount,
+			"Amount (Rs.)": s.amount,
 			Remarks: s.remarks ?? "",
 		}));
 		downloadExcel(rows, "Sessions", `${data.teacher.fullName}_sessions`);
@@ -87,22 +87,12 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 	};
 
 	const handlePdf = async () => {
-		if (!data) return;
+		if (!teacherId) return;
 		setExporting(true);
 		try {
-			const columns = ["Date", "Title", "Type", "Duration", "Amount", "Remarks"];
-			const body = data.sessions.map((s) => [
-				new Date(s.date).toLocaleDateString("en-IN"),
-				s.title,
-				typeLabel(s.sessionType),
-				`${s.durationMinutes} min`,
-				`Rs.${s.amount.toLocaleString("en-IN")}`,
-				s.remarks ?? "",
-			]);
-			const title = `Teacher Report - ${data.teacher.fullName}`;
-			const result = await exportPdf.mutateAsync({ type: "teacher", teacherId, title, columns, body });
+			const result = await exportTeacherPdf.mutateAsync({ teacherId, startDate, endDate });
 			window.open(result.url, "_blank");
-			toast.success("PDF saved to cloud and opened.");
+			toast.success("PDF generated and opened.");
 		} catch {
 			toast.error("PDF export failed.");
 		} finally {
@@ -113,11 +103,11 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 	return (
 		<div className="space-y-4">
 			{/* Filters */}
-			<div className="flex flex-wrap items-end gap-3">
-				<div className="flex flex-col gap-1">
+			<div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end gap-3">
+				<div className="flex flex-col gap-1 w-full sm:w-auto">
 					<span className="text-muted-foreground text-xs">Teacher</span>
 					<Select onValueChange={(v) => setParam("teacherId", v)} value={teacherId}>
-						<SelectTrigger className="w-52">
+						<SelectTrigger className="w-full sm:w-52">
 							<SelectValue placeholder="Select teacher…" />
 						</SelectTrigger>
 						<SelectContent>
@@ -130,56 +120,58 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 					</Select>
 				</div>
 
-				<div className="flex flex-col gap-1">
-					<span className="text-muted-foreground text-xs">From</span>
-					<div className="flex gap-1">
-						<Select onValueChange={(v) => setParam("startMonth", v)} value={String(startMonth)}>
-							<SelectTrigger className="w-32">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{MONTHS.map((m, i) => (
-									<SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Select onValueChange={(v) => setParam("startYear", v)} value={String(startYear)}>
-							<SelectTrigger className="w-24">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-							</SelectContent>
-						</Select>
+				<div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+					<div className="flex flex-col gap-1">
+						<span className="text-muted-foreground text-xs">From</span>
+						<div className="flex gap-1">
+							<Select onValueChange={(v) => setParam("startMonth", v)} value={String(startMonth)}>
+								<SelectTrigger className="w-32">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{MONTHS.map((m, i) => (
+										<SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Select onValueChange={(v) => setParam("startYear", v)} value={String(startYear)}>
+								<SelectTrigger className="w-24">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
-				</div>
 
-				<div className="flex flex-col gap-1">
-					<span className="text-muted-foreground text-xs">To</span>
-					<div className="flex gap-1">
-						<Select onValueChange={(v) => setParam("endMonth", v)} value={String(endMonth)}>
-							<SelectTrigger className="w-32">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{MONTHS.map((m, i) => (
-									<SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Select onValueChange={(v) => setParam("endYear", v)} value={String(endYear)}>
-							<SelectTrigger className="w-24">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-							</SelectContent>
-						</Select>
+					<div className="flex flex-col gap-1">
+						<span className="text-muted-foreground text-xs">To</span>
+						<div className="flex gap-1">
+							<Select onValueChange={(v) => setParam("endMonth", v)} value={String(endMonth)}>
+								<SelectTrigger className="w-32">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{MONTHS.map((m, i) => (
+										<SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Select onValueChange={(v) => setParam("endYear", v)} value={String(endYear)}>
+								<SelectTrigger className="w-24">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 				</div>
 
 				{data && (
-					<div className="ml-auto flex gap-2">
+					<div className="sm:ml-auto flex gap-2">
 						<Button onClick={handleExcel} size="sm" variant="outline">
 							<FileSpreadsheet className="size-4" />
 							Excel
@@ -194,7 +186,7 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 
 			{/* Summary */}
 			{data && (
-				<div className="grid grid-cols-3 gap-3">
+				<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 					<div className="rounded-lg border bg-card p-4">
 						<p className="text-muted-foreground text-sm">Sessions</p>
 						<p className="mt-1 font-semibold text-2xl tabular-nums">{data.totals.sessions}</p>
@@ -228,42 +220,74 @@ export function TeacherReportView({ teachers }: { teachers: TeacherOption[] }) {
 					<p className="text-muted-foreground text-sm">No sessions found for this period.</p>
 				</div>
 			) : (
-				<div className="rounded-lg border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Date</TableHead>
-								<TableHead>Title</TableHead>
-								<TableHead>Type</TableHead>
-								<TableHead className="text-right">Duration</TableHead>
-								<TableHead className="text-right">Amount</TableHead>
-								<TableHead>Remarks</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.sessions.map((s) => (
-								<TableRow key={s.id}>
-									<TableCell className="tabular-nums">
-										{new Date(s.date).toLocaleDateString("en-IN")}
-									</TableCell>
-									<TableCell className="font-medium">{s.title}</TableCell>
-									<TableCell>
-										<Badge variant="outline">{typeLabel(s.sessionType)}</Badge>
-									</TableCell>
-									<TableCell className="text-right tabular-nums">
-										{s.durationMinutes} min
-									</TableCell>
-									<TableCell className="text-right tabular-nums">
-										{currency.format(s.amount)}
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										{s.remarks ?? "—"}
-									</TableCell>
+				<>
+					{/* Mobile card list */}
+					<div className="md:hidden space-y-2">
+						{data.sessions.map((s) => (
+							<div key={s.id} className="rounded-lg border bg-card p-3 space-y-2">
+								{/* Top row: date + type badge + amount */}
+								<div className="flex items-center justify-between gap-2">
+									<div className="flex items-center gap-2 min-w-0">
+										<span className="text-muted-foreground text-xs tabular-nums shrink-0">
+											{new Date(s.date).toLocaleDateString("en-IN")}
+										</span>
+										<Badge variant="outline" className="text-xs shrink-0">{typeLabel(s.sessionType)}</Badge>
+									</div>
+									<span className="font-medium text-sm tabular-nums shrink-0">{currency.format(s.amount)}</span>
+								</div>
+
+								{/* Title */}
+								<p className="font-medium text-sm leading-none truncate">{s.title}</p>
+
+								{/* Duration + remarks */}
+								<div className="flex items-start justify-between gap-2">
+									<span className="text-muted-foreground text-xs">{s.durationMinutes} min</span>
+									{s.remarks && (
+										<span className="text-muted-foreground text-xs truncate min-w-0 text-right">{s.remarks}</span>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
+
+					{/* Desktop table */}
+					<div className="hidden md:block rounded-lg border">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Date</TableHead>
+									<TableHead>Title</TableHead>
+									<TableHead>Type</TableHead>
+									<TableHead className="text-right">Duration</TableHead>
+									<TableHead className="text-right">Amount</TableHead>
+									<TableHead>Remarks</TableHead>
 								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+							</TableHeader>
+							<TableBody>
+								{data.sessions.map((s) => (
+									<TableRow key={s.id}>
+										<TableCell className="tabular-nums">
+											{new Date(s.date).toLocaleDateString("en-IN")}
+										</TableCell>
+										<TableCell className="font-medium">{s.title}</TableCell>
+										<TableCell>
+											<Badge variant="outline">{typeLabel(s.sessionType)}</Badge>
+										</TableCell>
+										<TableCell className="text-right tabular-nums">
+											{s.durationMinutes} min
+										</TableCell>
+										<TableCell className="text-right tabular-nums">
+											{currency.format(s.amount)}
+										</TableCell>
+										<TableCell className="text-muted-foreground text-sm">
+											{s.remarks ?? "—"}
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				</>
 			)}
 		</div>
 	);

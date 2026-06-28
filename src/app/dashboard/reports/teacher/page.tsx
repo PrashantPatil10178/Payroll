@@ -11,6 +11,8 @@ export default async function TeacherReportPage() {
 		id: t.id,
 		teacherCode: t.teacherCode,
 		fullName: t.fullName,
+		memberType: t.memberType as "TEACHER" | "FREELANCER",
+		rates: null,
 	}));
 
 	return (

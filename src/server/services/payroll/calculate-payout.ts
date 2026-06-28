@@ -1,11 +1,16 @@
-import { SessionType } from "../../../../generated/prisma";
+import { RateUnit, SessionType } from "../../../../generated/prisma";
 
 type TeacherRates = {
 	liveRate: unknown;
+	liveRateUnit?: unknown;
 	recordingRate: unknown;
+	recordingRateUnit?: unknown;
 	youtubeRate: unknown;
+	youtubeRateUnit?: unknown;
 	doubtRate?: unknown;
+	doubtRateUnit?: unknown;
 	webinarRate?: unknown;
+	webinarRateUnit?: unknown;
 };
 
 export function calculateDurationMinutes(startTime: Date, endTime: Date) {
@@ -27,26 +32,55 @@ export function calculatePayoutAmount({
 	rates: TeacherRates;
 	sessionType: SessionType;
 }) {
-	const hourlyRate = Number(getHourlyRate(rates, sessionType));
+	const { rate, unit } = getRateConfig(rates, sessionType);
+	const numericRate = Number(rate);
 
-	if (!Number.isFinite(hourlyRate) || hourlyRate < 0) {
+	if (!Number.isFinite(numericRate) || numericRate < 0) {
 		throw new Error("Teacher payout rate is invalid.");
 	}
 
-	return Number(((durationMinutes / 60) * hourlyRate).toFixed(2));
+	if (unit === RateUnit.PER_SESSION) {
+		return Number(numericRate.toFixed(2));
+	}
+
+	return Number(((durationMinutes / 60) * numericRate).toFixed(2));
 }
 
-function getHourlyRate(rates: TeacherRates, sessionType: SessionType) {
+function getRateConfig(rates: TeacherRates, sessionType: SessionType) {
 	switch (sessionType) {
 		case SessionType.LIVE_CLASS:
-			return rates.liveRate;
+			return {
+				rate: rates.liveRate,
+				unit: (rates.liveRateUnit as RateUnit | undefined) ?? RateUnit.PER_HOUR,
+			};
 		case SessionType.RECORDING:
-			return rates.recordingRate;
+			return {
+				rate: rates.recordingRate,
+				unit:
+					(rates.recordingRateUnit as RateUnit | undefined) ??
+					RateUnit.PER_HOUR,
+			};
 		case SessionType.YOUTUBE:
-			return rates.youtubeRate;
+			return {
+				rate: rates.youtubeRate,
+				unit:
+					(rates.youtubeRateUnit as RateUnit | undefined) ?? RateUnit.PER_HOUR,
+			};
 		case SessionType.DOUBT_SOLVING:
-			return rates.doubtRate ?? rates.liveRate;
+			return {
+				rate: rates.doubtRate ?? rates.liveRate,
+				unit:
+					(rates.doubtRateUnit as RateUnit | undefined) ??
+					(rates.liveRateUnit as RateUnit | undefined) ??
+					RateUnit.PER_HOUR,
+			};
 		case SessionType.WEBINAR:
-			return rates.webinarRate ?? rates.liveRate;
+			return {
+				rate: rates.webinarRate ?? rates.liveRate,
+				unit:
+					(rates.webinarRateUnit as RateUnit | undefined) ??
+					(rates.liveRateUnit as RateUnit | undefined) ??
+					RateUnit.PER_HOUR,
+			};
 	}
 }

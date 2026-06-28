@@ -1,0 +1,4 @@
+CREATE TYPE "MemberType" AS ENUM ('TEACHER', 'FREELANCER');
+
+ALTER TABLE "teacher"
+ADD COLUMN "memberType" "MemberType" NOT NULL DEFAULT 'TEACHER';

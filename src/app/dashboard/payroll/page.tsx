@@ -32,6 +32,11 @@ export default async function PayrollPage({ searchParams }: PageProps) {
 			totalMinutes: row.totalMinutes,
 			computedAmount: row.totalAmount,
 			payroll: null,
+			teacherUpiId: null,
+			teacherBankAccount: null,
+			teacherBankIfsc: null,
+			teacherBankName: null,
+			teacherPaymentQrKey: null,
 		});
 	}
 
@@ -53,9 +58,17 @@ export default async function PayrollPage({ searchParams }: PageProps) {
 			paymentReference: p.paymentReference,
 			paidAt: p.paidAt ? p.paidAt.toISOString() : null,
 		};
+		const teacherPayment = {
+			teacherUpiId: p.teacher.upiId ?? null,
+			teacherBankAccount: p.teacher.bankAccountNumber ?? null,
+			teacherBankIfsc: p.teacher.bankIfsc ?? null,
+			teacherBankName: p.teacher.bankName ?? null,
+			teacherPaymentQrKey: p.teacher.paymentQrCode ?? null,
+		};
 		const existing = map.get(p.teacherId);
 		if (existing) {
 			existing.payroll = persisted;
+			Object.assign(existing, teacherPayment);
 		} else {
 			map.set(p.teacherId, {
 				teacherId: p.teacherId,
@@ -64,6 +77,7 @@ export default async function PayrollPage({ searchParams }: PageProps) {
 				totalMinutes: p.totalMinutes,
 				computedAmount: persisted.totalAmount,
 				payroll: persisted,
+				...teacherPayment,
 			});
 		}
 	}

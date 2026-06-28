@@ -21,7 +21,28 @@ export type TeacherOption = {
 	id: string;
 	teacherCode: string;
 	fullName: string;
+	memberType: "TEACHER" | "FREELANCER";
+	rates: {
+		liveRate: number;
+		liveRateUnit: string;
+		recordingRate: number;
+		recordingRateUnit: string;
+		youtubeRate: number;
+		youtubeRateUnit: string;
+		doubtRate: number | null;
+		doubtRateUnit: string;
+		webinarRate: number | null;
+		webinarRateUnit: string;
+	} | null;
 };
+
+export const FREELANCER_SESSION_TYPE_OPTIONS: { value: SessionType; label: string }[] = [
+	{ value: "LIVE_CLASS", label: "Work / Task" },
+	{ value: "RECORDING", label: "Deliverable / Asset" },
+	{ value: "WEBINAR", label: "Meeting / Call" },
+	{ value: "DOUBT_SOLVING", label: "Consultation" },
+	{ value: "YOUTUBE", label: "Other" },
+];
 
 // Plain literals assignable to the Prisma SessionType union (no Prisma runtime
 // import in client components).

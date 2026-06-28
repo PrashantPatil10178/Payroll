@@ -1,18 +1,27 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
 import PageContainer from "@/components/layout/page-container";
-import { TeachersView } from "@/features/teachers/components/teachers-view";
+import { MemberDetailView } from "@/features/teachers/components/member-detail-view";
 import type { TeacherRow } from "@/features/teachers/types";
 import { api } from "@/trpc/server";
 
-export const metadata = {
-	title: "Dashboard: Members",
-};
+export default async function MemberDetailPage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
+	const { id } = await params;
 
-export default async function TeachersPage() {
-	const teachers = await api.efms.listTeachers();
+	let teacher;
+	try {
+		teacher = await api.efms.getTeacher({ id });
+	} catch {
+		notFound();
+	}
 
-	// Convert Prisma Decimals to plain numbers so the data is safe to pass to a
-	// client component.
-	const rows: TeacherRow[] = teachers.map((teacher) => ({
+	const row: TeacherRow = {
 		id: teacher.id,
 		teacherCode: teacher.teacherCode,
 		fullName: teacher.fullName,
@@ -50,14 +59,25 @@ export default async function TeachersPage() {
 					webinarRateUnit: teacher.payoutConfig.webinarRateUnit,
 				}
 			: null,
-	}));
+	};
+
+	const typeLabel = teacher.memberType === "FREELANCER" ? "Freelancer" : "Teacher";
 
 	return (
 		<PageContainer
-			pageDescription="Manage member profiles, payout rules, and payment details."
-			pageTitle="Members"
+			pageTitle={teacher.fullName}
+			pageDescription={`${typeLabel} · ${teacher.teacherCode}`}
 		>
-			<TeachersView teachers={rows} />
+			<div className="mb-4">
+				<Link
+					href="/dashboard/teachers"
+					className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				>
+					<ChevronLeft className="size-4" />
+					Back to Members
+				</Link>
+			</div>
+			<MemberDetailView teacher={row} />
 		</PageContainer>
 	);
 }

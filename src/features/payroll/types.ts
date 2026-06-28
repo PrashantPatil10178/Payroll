@@ -38,6 +38,11 @@ export type PayrollRow = {
 	totalMinutes: number;
 	computedAmount: number;
 	payroll: PersistedPayroll | null;
+	teacherUpiId: string | null;
+	teacherBankAccount: string | null;
+	teacherBankIfsc: string | null;
+	teacherBankName: string | null;
+	teacherPaymentQrKey: string | null;
 };
 
 export const MONTHS = [

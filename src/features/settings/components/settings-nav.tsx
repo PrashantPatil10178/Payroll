@@ -7,6 +7,7 @@ const NAV = [
 	{ label: "General", href: "/dashboard/settings/general" },
 	{ label: "Members", href: "/dashboard/settings/members" },
 	{ label: "Profile", href: "/dashboard/settings/profile" },
+	{ label: "Appearance", href: "/dashboard/settings/appearance" },
 ];
 
 export function SettingsNav() {

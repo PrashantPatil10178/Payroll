@@ -56,15 +56,35 @@ export default async function SessionsPage({ searchParams }: PageProps) {
 		id: teacher.id,
 		teacherCode: teacher.teacherCode,
 		fullName: teacher.fullName,
+		memberType: teacher.memberType as "TEACHER" | "FREELANCER",
+		rates: teacher.payoutConfig
+			? {
+					liveRate: Number(teacher.payoutConfig.liveRate),
+					liveRateUnit: teacher.payoutConfig.liveRateUnit,
+					recordingRate: Number(teacher.payoutConfig.recordingRate),
+					recordingRateUnit: teacher.payoutConfig.recordingRateUnit,
+					youtubeRate: Number(teacher.payoutConfig.youtubeRate),
+					youtubeRateUnit: teacher.payoutConfig.youtubeRateUnit,
+					doubtRate: teacher.payoutConfig.doubtRate == null ? null : Number(teacher.payoutConfig.doubtRate),
+					doubtRateUnit: teacher.payoutConfig.doubtRateUnit,
+					webinarRate: teacher.payoutConfig.webinarRate == null ? null : Number(teacher.payoutConfig.webinarRate),
+					webinarRateUnit: teacher.payoutConfig.webinarRateUnit,
+				}
+			: null,
 	}));
 
 	return (
 		<PageContainer
+			pageDescription="Record sessions with direct duration entry or time ranges, and calculate payout automatically."
 			pageTitle="Sessions"
-			pageDescription="Record faculty sessions — duration and payout are calculated automatically."
 		>
 			<SessionsView
-				filters={{ month, year, teacherId: teacherId ?? "", sessionType: sessionType ?? "" }}
+				filters={{
+					month,
+					year,
+					teacherId: teacherId ?? "",
+					sessionType: sessionType ?? "",
+				}}
 				sessions={rows}
 				teacherOptions={teacherOptions}
 			/>

@@ -2,6 +2,7 @@
 
 import { Archive, Copy, ImagePlus, Mail, Pencil, Plus, RotateCcw } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -97,15 +98,22 @@ function StatusBadge({ status }: { status: TeacherRow["status"] }) {
 
 export function TeachersView({ teachers }: { teachers: TeacherRow[] }) {
 	const router = useRouter();
+	const utils = api.useUtils();
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<TeacherRow | null>(null);
 	const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 	const [inviteTeacherName, setInviteTeacherName] = useState("");
 
+	const refresh = () => {
+		void utils.efms.listTeachers.invalidate();
+		void utils.efms.teacherOptions.invalidate();
+		router.refresh();
+	};
+
 	const archiveTeacher = api.efms.archiveTeacher.useMutation({
 		onSuccess: () => {
 			toast.success("Teacher status updated.");
-			router.refresh();
+			refresh();
 		},
 		onError: (error) => toast.error(error.message),
 	});
@@ -130,133 +138,229 @@ export function TeachersView({ teachers }: { teachers: TeacherRow[] }) {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<p className="text-muted-foreground text-sm">
-					{teachers.length} teacher{teachers.length === 1 ? "" : "s"}
+					{teachers.length} member{teachers.length === 1 ? "" : "s"}
 				</p>
 				<Button onClick={openCreate}>
 					<Plus className="size-4" />
-					Add Teacher
+					Add Member
 				</Button>
 			</div>
 
 			{teachers.length === 0 ? (
 				<div className="rounded-lg border border-dashed bg-muted/50 p-10 text-center">
-					<p className="font-medium">No teachers yet</p>
+					<p className="font-medium">No members yet</p>
 					<p className="mx-auto mt-1 max-w-sm text-muted-foreground text-sm">
-						Add your first faculty member with their per-hour payout rates to
-						start recording sessions.
+						Add your first member — teacher, freelancer, or contractor — with their payout rates to start recording sessions.
 					</p>
 					<Button className="mt-4" onClick={openCreate} variant="outline">
 						<Plus className="size-4" />
-						Add Teacher
+						Add Member
 					</Button>
 				</div>
 			) : (
-				<div className="rounded-lg border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="w-10" />
-								<TableHead>Code</TableHead>
-								<TableHead>Name</TableHead>
-								<TableHead>Contact</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead className="text-right">Live</TableHead>
-								<TableHead className="text-right">Recording</TableHead>
-								<TableHead className="text-right">YouTube</TableHead>
-								<TableHead className="text-right">Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{teachers.map((teacher) => {
-								const isArchived = teacher.status === "ARCHIVED";
-								return (
-									<TableRow key={teacher.id}>
-										<TableCell>
-											<AvatarUploadButton teacherId={teacher.id} avatarKey={teacher.avatarKey} />
-										</TableCell>
-										<TableCell className="font-mono text-xs">
-											{teacher.teacherCode}
-										</TableCell>
-										<TableCell>
-											<div className="font-medium">{teacher.fullName}</div>
-											{teacher.specialization && (
-												<div className="text-muted-foreground text-xs">
-													{teacher.specialization}
-												</div>
-											)}
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{teacher.email && <div>{teacher.email}</div>}
-											{teacher.mobile && <div>{teacher.mobile}</div>}
-											{!teacher.email && !teacher.mobile && "—"}
-										</TableCell>
-										<TableCell>
-											<StatusBadge status={teacher.status} />
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{teacher.rates ? currency.format(teacher.rates.liveRate) : "—"}
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{teacher.rates
-												? currency.format(teacher.rates.recordingRate)
-												: "—"}
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{teacher.rates
-												? currency.format(teacher.rates.youtubeRate)
-												: "—"}
-										</TableCell>
-										<TableCell>
-											<div className="flex items-center justify-end gap-1">
-												{teacher.hasPortalAccess && (
-													<Badge variant="outline" className="px-1.5 text-xs">Portal</Badge>
+				<>
+					{/* Mobile card list */}
+					<div className="md:hidden space-y-2">
+						{teachers.map((teacher) => {
+							const isArchived = teacher.status === "ARCHIVED";
+							return (
+								<div key={teacher.id} className="rounded-lg border bg-card p-3 space-y-2">
+									{/* Top row: avatar + name + status */}
+									<div className="flex items-start justify-between gap-3">
+										<div className="flex items-start gap-3 min-w-0">
+											<div className="shrink-0">
+												<AvatarUploadButton teacherId={teacher.id} avatarKey={teacher.avatarKey} />
+											</div>
+											<div className="min-w-0">
+													<Link
+														href={`/dashboard/teachers/${teacher.id}`}
+														className="truncate font-medium text-sm leading-none hover:underline"
+													>
+														{teacher.fullName}
+													</Link>
+												<p className="mt-1 font-mono text-xs text-muted-foreground">{teacher.teacherCode}</p>
+												{teacher.specialization && (
+													<p className="mt-0.5 text-muted-foreground text-xs truncate">{teacher.specialization}</p>
 												)}
-												<Button onClick={() => openEdit(teacher)} size="sm" variant="ghost">
-													<Pencil className="size-4" />
-													<span className="sr-only">Edit</span>
-												</Button>
-												{!teacher.hasPortalAccess && !isArchived && (
+											</div>
+										</div>
+										<StatusBadge status={teacher.status} />
+									</div>
+
+									{/* Contact */}
+									{(teacher.email || teacher.mobile) && (
+										<div className="text-muted-foreground text-xs space-y-0.5">
+											{teacher.email && <p className="truncate">{teacher.email}</p>}
+											{teacher.mobile && <p>{teacher.mobile}</p>}
+										</div>
+									)}
+
+									{/* Rates row */}
+									{teacher.rates && (
+										<div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+											<span>Live <span className="tabular-nums text-foreground">{currency.format(teacher.rates.liveRate)}/hr</span></span>
+											<span>Rec <span className="tabular-nums text-foreground">{currency.format(teacher.rates.recordingRate)}/hr</span></span>
+											<span>YT <span className="tabular-nums text-foreground">{currency.format(teacher.rates.youtubeRate)}/hr</span></span>
+										</div>
+									)}
+
+									{/* Actions row */}
+									<div className="flex items-center gap-1 pt-1 border-t">
+										{teacher.hasPortalAccess && (
+											<Badge variant="outline" className="px-1.5 text-xs">Portal</Badge>
+										)}
+										<Button onClick={() => openEdit(teacher)} size="sm" variant="ghost">
+											<Pencil className="size-4" />
+											<span className="sr-only">Edit</span>
+										</Button>
+										{!teacher.hasPortalAccess && !isArchived && (
+											<Button
+												disabled={generateInvite.isPending}
+												onClick={() => {
+													setInviteTeacherName(teacher.fullName);
+													generateInvite.mutate({ teacherId: teacher.id });
+												}}
+												size="sm"
+												variant="ghost"
+												title="Invite to portal"
+											>
+												<Mail className="size-4" />
+												<span className="sr-only">Invite</span>
+											</Button>
+										)}
+										<Button
+											disabled={archiveTeacher.isPending}
+											onClick={() =>
+												archiveTeacher.mutate({
+													id: teacher.id,
+													status: isArchived ? "ACTIVE" : "ARCHIVED",
+												})
+											}
+											size="sm"
+											variant="ghost"
+										>
+											{isArchived ? <RotateCcw className="size-4" /> : <Archive className="size-4" />}
+											<span className="sr-only">{isArchived ? "Restore" : "Archive"}</span>
+										</Button>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+
+					{/* Desktop table */}
+					<div className="hidden md:block rounded-lg border">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead className="w-10" />
+									<TableHead>Code</TableHead>
+									<TableHead>Name</TableHead>
+									<TableHead>Contact</TableHead>
+									<TableHead>Status</TableHead>
+									<TableHead className="text-right">Live</TableHead>
+									<TableHead className="text-right">Recording</TableHead>
+									<TableHead className="text-right">YouTube</TableHead>
+									<TableHead className="text-right">Actions</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{teachers.map((teacher) => {
+									const isArchived = teacher.status === "ARCHIVED";
+									return (
+										<TableRow key={teacher.id}>
+											<TableCell>
+												<AvatarUploadButton teacherId={teacher.id} avatarKey={teacher.avatarKey} />
+											</TableCell>
+											<TableCell className="font-mono text-xs">
+												{teacher.teacherCode}
+											</TableCell>
+											<TableCell>
+													<Link
+														href={`/dashboard/teachers/${teacher.id}`}
+														className="font-medium hover:underline"
+													>
+														{teacher.fullName}
+													</Link>
+												{teacher.specialization && (
+													<div className="text-muted-foreground text-xs">
+														{teacher.specialization}
+													</div>
+												)}
+											</TableCell>
+											<TableCell className="text-muted-foreground text-sm">
+												{teacher.email && <div>{teacher.email}</div>}
+												{teacher.mobile && <div>{teacher.mobile}</div>}
+												{!teacher.email && !teacher.mobile && "—"}
+											</TableCell>
+											<TableCell>
+												<StatusBadge status={teacher.status} />
+											</TableCell>
+											<TableCell className="text-right tabular-nums">
+												{teacher.rates ? currency.format(teacher.rates.liveRate) : "—"}
+											</TableCell>
+											<TableCell className="text-right tabular-nums">
+												{teacher.rates
+													? currency.format(teacher.rates.recordingRate)
+													: "—"}
+											</TableCell>
+											<TableCell className="text-right tabular-nums">
+												{teacher.rates
+													? currency.format(teacher.rates.youtubeRate)
+													: "—"}
+											</TableCell>
+											<TableCell>
+												<div className="flex items-center justify-end gap-1">
+													{teacher.hasPortalAccess && (
+														<Badge variant="outline" className="px-1.5 text-xs">Portal</Badge>
+													)}
+													<Button onClick={() => openEdit(teacher)} size="sm" variant="ghost">
+														<Pencil className="size-4" />
+														<span className="sr-only">Edit</span>
+													</Button>
+													{!teacher.hasPortalAccess && !isArchived && (
+														<Button
+															disabled={generateInvite.isPending}
+															onClick={() => {
+																setInviteTeacherName(teacher.fullName);
+																generateInvite.mutate({ teacherId: teacher.id });
+															}}
+															size="sm"
+															variant="ghost"
+															title="Invite to portal"
+														>
+															<Mail className="size-4" />
+															<span className="sr-only">Invite</span>
+														</Button>
+													)}
 													<Button
-														disabled={generateInvite.isPending}
-														onClick={() => {
-															setInviteTeacherName(teacher.fullName);
-															generateInvite.mutate({ teacherId: teacher.id });
-														}}
+														disabled={archiveTeacher.isPending}
+														onClick={() =>
+															archiveTeacher.mutate({
+																id: teacher.id,
+																status: isArchived ? "ACTIVE" : "ARCHIVED",
+															})
+														}
 														size="sm"
 														variant="ghost"
-														title="Invite to portal"
 													>
-														<Mail className="size-4" />
-														<span className="sr-only">Invite</span>
+														{isArchived ? <RotateCcw className="size-4" /> : <Archive className="size-4" />}
+														<span className="sr-only">{isArchived ? "Restore" : "Archive"}</span>
 													</Button>
-												)}
-												<Button
-													disabled={archiveTeacher.isPending}
-													onClick={() =>
-														archiveTeacher.mutate({
-															id: teacher.id,
-															status: isArchived ? "ACTIVE" : "ARCHIVED",
-														})
-													}
-													size="sm"
-													variant="ghost"
-												>
-													{isArchived ? <RotateCcw className="size-4" /> : <Archive className="size-4" />}
-													<span className="sr-only">{isArchived ? "Restore" : "Archive"}</span>
-												</Button>
-											</div>
-										</TableCell>
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</div>
+												</div>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
+				</>
 			)}
 
 			<TeacherFormSheet
 				onOpenChange={setOpen}
-				onSaved={() => router.refresh()}
+				onSaved={() => refresh()}
 				open={open}
 				teacher={editing}
 			/>

@@ -154,9 +154,11 @@ model Teacher {
   organizationId  String
   teacherCode     String
   fullName        String
+  roleTitle       String?
   email           String?
   mobile          String?
   status          TeacherStatus @default(ACTIVE)
+  memberType      MemberType    @default(TEACHER)
   specialization  String?
   avatar          String?
   joinedAt        DateTime      @default(now())
@@ -168,6 +170,8 @@ model Teacher {
   bankIfsc          String?
   bankName          String?
   panNumber         String?
+  upiId             String?
+  paymentQrCode     String?
 
   // Portal login
   userId           String?   @unique
@@ -187,16 +191,21 @@ model Teacher {
 }
 
 model TeacherPayoutConfig {
-  id            String   @id @default(cuid())
-  teacherId     String   @unique
-  liveRate      Decimal  @db.Decimal(12, 2)
-  recordingRate Decimal  @db.Decimal(12, 2)
-  youtubeRate   Decimal  @db.Decimal(12, 2)
-  doubtRate     Decimal? @db.Decimal(12, 2)
-  webinarRate   Decimal? @db.Decimal(12, 2)
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  teacherId         String   @unique
+  liveRate          Decimal  @db.Decimal(12, 2)
+  liveRateUnit      RateUnit @default(PER_HOUR)
+  recordingRate     Decimal  @db.Decimal(12, 2)
+  recordingRateUnit RateUnit @default(PER_HOUR)
+  youtubeRate       Decimal  @db.Decimal(12, 2)
+  youtubeRateUnit   RateUnit @default(PER_HOUR)
+  doubtRate         Decimal? @db.Decimal(12, 2)
+  doubtRateUnit     RateUnit @default(PER_HOUR)
+  webinarRate       Decimal? @db.Decimal(12, 2)
+  webinarRateUnit   RateUnit @default(PER_HOUR)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
@@ -331,4 +340,14 @@ enum PaymentMethod {
   CASH
   CHEQUE
   OTHER
+}
+
+enum RateUnit {
+  PER_HOUR
+  PER_SESSION
+}
+
+enum MemberType {
+  TEACHER
+  FREELANCER
 }

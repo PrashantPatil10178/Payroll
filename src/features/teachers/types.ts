@@ -1,17 +1,24 @@
-import type { TeacherStatus } from "../../../generated/prisma";
+import type { MemberType, RateUnit, TeacherStatus } from "../../../generated/prisma";
 
 export type TeacherRates = {
 	liveRate: number;
+	liveRateUnit: RateUnit;
 	recordingRate: number;
+	recordingRateUnit: RateUnit;
 	youtubeRate: number;
+	youtubeRateUnit: RateUnit;
 	doubtRate: number | null;
+	doubtRateUnit: RateUnit;
 	webinarRate: number | null;
+	webinarRateUnit: RateUnit;
 };
 
 export type TeacherRow = {
 	id: string;
 	teacherCode: string;
 	fullName: string;
+	memberType: MemberType;
+	roleTitle: string | null;
 	email: string | null;
 	mobile: string | null;
 	specialization: string | null;
@@ -23,6 +30,8 @@ export type TeacherRow = {
 	bankIfsc: string | null;
 	bankName: string | null;
 	panNumber: string | null;
+	upiId: string | null;
+	paymentQrCodeKey: string | null;
 };
 
 // Plain literals (assignable to the Prisma TeacherStatus union) so client
@@ -33,4 +42,3 @@ export const TEACHER_STATUS_OPTIONS: { value: TeacherStatus; label: string }[] =
 		{ value: "INACTIVE", label: "Inactive" },
 		{ value: "ARCHIVED", label: "Archived" },
 	];
-
